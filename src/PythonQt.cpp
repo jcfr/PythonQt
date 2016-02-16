@@ -1299,6 +1299,8 @@ PythonQtPrivate::PythonQtPrivate()
   _systemExitExceptionHandlerEnabled = false;
   _debugAPI = new PythonQtDebugAPI(this);
 
+  PythonQtMethodInfo::initializeCachedMethodInfos();
+
   PythonQtConv::global_valueStorage.init();
   PythonQtConv::global_ptrStorage.init();
   PythonQtConv::global_variantStorage.init();

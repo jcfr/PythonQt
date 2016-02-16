@@ -93,6 +93,9 @@ public:
   //! get the cached method info using the passed in list of return value and arguments, return value needs to be passed as first arg
   static const PythonQtMethodInfo* getCachedMethodInfoFromArgumentList(int numArgs, const char** args);
 
+  //! initialize the cache
+  static void initializeCachedMethodInfos();
+
   //! cleanup the cache
   static void cleanupCachedMethodInfos();
 
@@ -126,9 +129,9 @@ protected:
   static QHash<QByteArray, QByteArray> _parameterNameAliases;
 
   //! stores the cached signatures of methods to speedup mapping from Qt to Python types
-  static QHash<QByteArray, PythonQtMethodInfo*> _cachedSignatures;
+  static QHash<QByteArray, PythonQtMethodInfo*>* _cachedSignatures;
 
-  static QHash<int, ParameterInfo> _cachedParameterInfos;
+  static QHash<int, ParameterInfo>* _cachedParameterInfos;
 
   QList<ParameterInfo> _parameters;
 };

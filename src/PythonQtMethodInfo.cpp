@@ -43,8 +43,8 @@
 #include "PythonQtClassInfo.h"
 #include <iostream>
 
-QHash<QByteArray, PythonQtMethodInfo*> PythonQtMethodInfo::_cachedSignatures;
-QHash<int, PythonQtMethodInfo::ParameterInfo> PythonQtMethodInfo::_cachedParameterInfos;
+QHash<QByteArray, PythonQtMethodInfo*>* PythonQtMethodInfo::_cachedSignatures;
+QHash<int, PythonQtMethodInfo::ParameterInfo>* PythonQtMethodInfo::_cachedParameterInfos;
 QHash<QByteArray, QByteArray> PythonQtMethodInfo::_parameterNameAliases;
 
 PythonQtMethodInfo::PythonQtMethodInfo(const QMetaMethod& meta, PythonQtClassInfo* classInfo)
@@ -82,10 +82,10 @@ const PythonQtMethodInfo* PythonQtMethodInfo::getCachedMethodInfo(const QMetaMet
   QByteArray sig(PythonQtUtils::signature(signal));
   sig = sig.mid(sig.indexOf('('));
   QByteArray fullSig = QByteArray(signal.typeName()) + " " + sig;
-  PythonQtMethodInfo* result = _cachedSignatures.value(fullSig);
+  PythonQtMethodInfo* result = _cachedSignatures->value(fullSig);
   if (!result) {
     result = new PythonQtMethodInfo(signal, classInfo);
-    _cachedSignatures.insert(fullSig, result);
+    _cachedSignatures->insert(fullSig, result);
   }
   return result;
 }
@@ -105,10 +105,10 @@ const PythonQtMethodInfo* PythonQtMethodInfo::getCachedMethodInfoFromArgumentLis
     arguments << arg;
   }
   fullSig += ")";
-  PythonQtMethodInfo* result = _cachedSignatures.value(fullSig);
+  PythonQtMethodInfo* result = _cachedSignatures->value(fullSig);
   if (!result) {
     result = new PythonQtMethodInfo(typeName, arguments);
-    _cachedSignatures.insert(fullSig, result);
+    _cachedSignatures->insert(fullSig, result);
   }
   return result;
 }
@@ -346,14 +346,23 @@ int PythonQtMethodInfo::nameToType(const char* name)
   }
 }
 
+void PythonQtMethodInfo::initializeCachedMethodInfos()
+{
+  _cachedSignatures = new QHash<QByteArray, PythonQtMethodInfo*>();
+  _cachedParameterInfos = new QHash<int, PythonQtMethodInfo::ParameterInfo>();
+}
+
 void PythonQtMethodInfo::cleanupCachedMethodInfos()
 {
-  QHashIterator<QByteArray, PythonQtMethodInfo *> i(_cachedSignatures);
+  QHashIterator<QByteArray, PythonQtMethodInfo *> i(*_cachedSignatures);
   while (i.hasNext()) {
     delete i.next().value();
   }
-  _cachedSignatures.clear();
-  _cachedParameterInfos.clear();
+  _cachedSignatures->clear();
+  _cachedParameterInfos->clear();
+
+  delete _cachedSignatures;
+  delete _cachedParameterInfos;
 }
 
 void PythonQtMethodInfo::addParameterTypeAlias(const QByteArray& alias, const QByteArray& name)
@@ -363,14 +372,14 @@ void PythonQtMethodInfo::addParameterTypeAlias(const QByteArray& alias, const QB
 
 const PythonQtMethodInfo::ParameterInfo& PythonQtMethodInfo::getParameterInfoForMetaType(int type)
 {
-  QHash<int, ParameterInfo>::ConstIterator it = _cachedParameterInfos.find(type);
-  if (it != _cachedParameterInfos.constEnd()) {
+  QHash<int, ParameterInfo>::ConstIterator it = _cachedParameterInfos->find(type);
+  if (it != _cachedParameterInfos->constEnd()) {
     return it.value();
   }
   ParameterInfo info;
   fillParameterInfo(info, QMetaType::typeName(type));
-  _cachedParameterInfos.insert(type, info);
-  return _cachedParameterInfos[type];
+  _cachedParameterInfos->insert(type, info);
+  return (*_cachedParameterInfos)[type];
 }
 
 //-------------------------------------------------------------------------------------------------
