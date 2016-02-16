@@ -45,6 +45,30 @@ int main(int argc, char* argv[])
               << std::endl;
     return EXIT_FAILURE;
     }
+
+  //
+  // Resolve and invoke 'run_pythonqt_tests' function.
+  //
+  typedef int (*FUNC_ARGC_ARGV_RETURNS_INT_TYPE)(int argc, char* argv[]);
+  FUNC_ARGC_ARGV_RETURNS_INT_TYPE func2 =
+    (FUNC_ARGC_ARGV_RETURNS_INT_TYPE) library.resolve("run_pythonqt_tests");
+  if (!func2)
+    {
+    std::cerr << "Failed to resolve symbol 'run_pythonqt_tests'" << std::endl;
+    return EXIT_FAILURE;
+    }
+
+  result = func2(argc, argv);
+  expected = 0;
+  if (result != expected)
+    {
+    std::cerr << "Problem with function 'run_pythonqt_tests':\n"
+              << "\tresult: " << result << "\n"
+              << "\texpected: " << expected
+              << std::endl;
+    return EXIT_FAILURE;
+    }
+
   return EXIT_SUCCESS;
 }
 

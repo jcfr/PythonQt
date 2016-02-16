@@ -272,12 +272,12 @@ if(BUILD_TESTING)
 
   set_property(SOURCE tests/PythonQtTestMain.cpp PROPERTY COMPILE_DEFINITIONS "main=tests_PythonQtTestMain")
 
-  list(APPEND test_sources
+  list(APPEND PythonQtTests_sources
     tests/PythonQtTests.cpp
     tests/PythonQtTests.h
     )
 
-  QT4_WRAP_CPP(test_sources
+  QT4_WRAP_CPP(PythonQtTests_sources
     tests/PythonQtTests.h
     )
 
@@ -295,7 +295,7 @@ if(BUILD_TESTING)
     set_property(SOURCE tests/PythonQtTestMain.cpp APPEND PROPERTY COMPILE_DEFINITIONS "PythonQt_Wrap_Qtcore")
   endif()
 
-  add_executable(PythonQtCppTests ${test_sources})
+  add_executable(PythonQtCppTests ${test_sources} ${PythonQtTests_sources})
   target_link_libraries(PythonQtCppTests PythonQt)
 
   add_test(
@@ -308,7 +308,10 @@ if(BUILD_TESTING)
   #                               PythonQt) properly initializes PythonQt.
   #
 
-  add_library(PythonQtDynamicLoaderSharedLibrary SHARED tests/PythonQtDynamicLoaderSharedLibrary.cpp)
+  add_library(PythonQtDynamicLoaderSharedLibrary SHARED
+    tests/PythonQtDynamicLoaderSharedLibrary.cpp
+    ${PythonQtTests_sources}
+    )
   target_link_libraries(PythonQtDynamicLoaderSharedLibrary PythonQt)
 
   add_executable(PythonQtDynamicLoader tests/PythonQtDynamicLoader.cpp)
