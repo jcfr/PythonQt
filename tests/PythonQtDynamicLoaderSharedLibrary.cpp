@@ -9,6 +9,8 @@
 #define MY_EXPORT
 #endif
 
+#define RUN_TEST_IN_STATIC_INITIALIZER
+
 extern "C"
 {
 
@@ -17,7 +19,7 @@ extern "C"
     return 42;
   }
 
-  int MY_EXPORT run_pythonqt_tests(int argc, char* argv[])
+  int _run_pythonqt_tests(int argc, char* argv[])
   {
     // Copied from PythonQtTestMain.cpp
     int failCount = 0;
@@ -37,6 +39,18 @@ extern "C"
     return failCount;
   }
 
+
+  int MY_EXPORT run_pythonqt_tests(int argc, char* argv[])
+  {
+#ifndef RUN_TEST_IN_STATIC_INITIALIZER
+    return _run_pythonqt_tests(argc, argv);
+#else
+    Q_UNUSED(argc);
+    Q_UNUSED(argv);
+    return 0;
+#endif
+  }
+
 }
 
 struct StaticInitializer
@@ -45,6 +59,12 @@ struct StaticInitializer
   {
     std::cout << "PythonQtDynamicLoaderSharedLibrary::StaticInitializer" << std::endl;
     PythonQt::init(PythonQt::IgnoreSiteModule | PythonQt::RedirectStdOut);
+
+#ifdef RUN_TEST_IN_STATIC_INITIALIZER
+    int argc = 1;
+    char * argv [] = {"RunTestInStaticInitializer"};
+    _run_pythonqt_tests(argc, argv);
+#endif
   }
 };
 
