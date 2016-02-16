@@ -304,19 +304,46 @@ if(BUILD_TESTING)
     )
 
   #
-  # tests_PythonQtDynamicLoading: This test checks that a dynamically loaded library (itself linked against
-  #                               PythonQt) properly initializes PythonQt.
+  # PythonQtDynamicLoading tests
   #
+  # These tests check that a dynamically loaded library (itself linked against PythonQt) properly
+  # initializes PythonQt and allow the PythonQt testing suites to complete.
+  #
+  # Infrastructure:
+  #
+  #  * PythonQtDynamicLoaderSharedLibrary:
+  #    - Shared library linked against PythonQt
+  #    - export two "C compatible" symbols:
+  #         'this_function_returns_42': function that is expected to return the integer 42
+  #         'run_pythonqt_tests' : function running python test suite if RUN_TESTSUITE_IN_STATIC_INITIALIZER is 0
+  #    - contain a statically initialized structure named 'StaticInitializer':
+  #         - always call 'PythonQt::init()'
+  #         - running python test suite if RUN_TESTSUITE_IN_STATIC_INITIALIZER is 1
+  #
+  #
+  #  * PythonQtDynamicLoader: Executable loading the 'PythonQtDynamicLoaderSharedLibrary' using QLibrary
+  #    - resolve symbols 'this_function_returns_42' and 'run_pythonqt_tests' and call the corresponding function.
+  #
+  #
+  # To summarize, two cases are considered:
+  #
+  # (a) RUN_TESTSUITE_IN_STATIC_INITIALIZER = 0
+  #
+  #  - PythonQt::init(...) called in StaticInitializer
+  #  - Python test suite executed in function 'run_pythonqt_tests'
+  #
+  #  Name of test: tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_0
+  #
+  #
+  # (b) RUN_TESTSUITE_IN_STATIC_INITIALIZER = 1
+  #
+  #  - PythonQt::init(...) called in 'StaticInitializer'
+  #  - Python test suite executed in 'StaticInitializer'
+  #
+  #  Name of test: tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_1
 
-  add_library(PythonQtDynamicLoaderSharedLibrary SHARED
-    tests/PythonQtDynamicLoaderSharedLibrary.cpp
-    ${PythonQtTests_sources}
-    )
-  target_link_libraries(PythonQtDynamicLoaderSharedLibrary PythonQt)
-
-  add_executable(PythonQtDynamicLoader tests/PythonQtDynamicLoader.cpp)
-  target_link_libraries(PythonQtDynamicLoader ${QT_LIBRARIES})
-
+  # Configure 'test_wrapper' common to all 'PythonQtDynamicLoading' tests
+  #
   # Since setting the ENVIRONMENT property value with semicolon (e.g. PATH) is not supported, we
   # generate a wrapper script to update PATH and LD_LIBRARY_PATH.
   set(test_wrapper "${CMAKE_CURRENT_BINARY_DIR}/test_wrapper.cmake")
@@ -332,10 +359,42 @@ if(NOT result EQUAL 0)
 endif()
 ")
 
-  add_test(
-    NAME tests_PythonQtDynamicLoading
-    COMMAND ${CMAKE_COMMAND} -DTARGET_FILE=$<TARGET_FILE:PythonQtDynamicLoader> -P ${test_wrapper}
-    )
+  function(_add_dynamic_loading_test run_testsuite_in_static_initializer)
+
+    set(suffix 0)
+    if(run_testsuite_in_static_initializer)
+      set(suffix 1)
+    endif()
+
+    add_library(PythonQtDynamicLoaderSharedLibrary_${suffix} SHARED
+      tests/PythonQtDynamicLoaderSharedLibrary.cpp
+      ${PythonQtTests_sources}
+      )
+    target_link_libraries(PythonQtDynamicLoaderSharedLibrary_${suffix} PythonQt)
+
+    add_executable(PythonQtDynamicLoader_${suffix} tests/PythonQtDynamicLoader.cpp)
+    target_link_libraries(PythonQtDynamicLoader_${suffix} ${QT_LIBRARIES})
+
+    if(run_testsuite_in_static_initializer)
+      set_target_properties(
+        PythonQtDynamicLoaderSharedLibrary_${suffix}
+        PythonQtDynamicLoader_${suffix}
+        PROPERTIES COMPILE_DEFINITIONS "RUN_TESTSUITE_IN_STATIC_INITIALIZER"
+        )
+    endif()
+
+    add_test(
+      NAME tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix}
+      COMMAND ${CMAKE_COMMAND} -DTARGET_FILE=$<TARGET_FILE:PythonQtDynamicLoader_${suffix}> -P ${test_wrapper}
+      )
+
+  endfunction()
+
+  #  RUN_TESTSUITE_IN_STATIC_INITIALIZER = 0
+  _add_dynamic_loading_test(0)
+
+  #  RUN_TESTSUITE_IN_STATIC_INITIALIZER = 1
+  _add_dynamic_loading_test(1)
 
 endif()
 

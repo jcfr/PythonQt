@@ -6,6 +6,12 @@
 #include <cstdlib>
 #include <iostream>
 
+#ifndef RUN_TESTSUITE_IN_STATIC_INITIALIZER
+# define DYNAMIC_LOADER_SHARED_LIBRARY_NAME "PythonQtDynamicLoaderSharedLibrary_0"
+#else
+# define DYNAMIC_LOADER_SHARED_LIBRARY_NAME "PythonQtDynamicLoaderSharedLibrary_1"
+#endif
+
 int main(int argc, char* argv[])
 {
   QApplication qapp(argc, argv);
@@ -17,10 +23,11 @@ int main(int argc, char* argv[])
 #endif
 
 
-  QLibrary library("PythonQtDynamicLoaderSharedLibrary");
+  QLibrary library(DYNAMIC_LOADER_SHARED_LIBRARY_NAME);
+  std::cout << "Loading '" << DYNAMIC_LOADER_SHARED_LIBRARY_NAME << "'" << std::endl;
   if (!library.load())
     {
-    std::cerr << "Failed to load 'PythonQtDynamicLoaderSharedLibrary': "
+    std::cerr << "Failed to load '" << DYNAMIC_LOADER_SHARED_LIBRARY_NAME << "': "
       << qPrintable(library.errorString()) << std::endl;
     return EXIT_FAILURE;
     }
