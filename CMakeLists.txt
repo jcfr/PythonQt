@@ -302,5 +302,37 @@ if(BUILD_TESTING)
     NAME tests_PythonQtTestMain
     COMMAND ${Slicer_LAUNCH_COMMAND} $<TARGET_FILE:PythonQtCppTests> tests/PythonQtTestMain
     )
+
+  #
+  # tests_PythonQtDynamicLoading: This test checks that a dynamically loaded library (itself linked against
+  #                               PythonQt) properly initializes PythonQt.
+  #
+
+  add_library(PythonQtDynamicLoaderSharedLibrary SHARED tests/PythonQtDynamicLoaderSharedLibrary.cpp)
+  target_link_libraries(PythonQtDynamicLoaderSharedLibrary PythonQt)
+
+  add_executable(PythonQtDynamicLoader tests/PythonQtDynamicLoader.cpp)
+  target_link_libraries(PythonQtDynamicLoader ${QT_LIBRARIES})
+
+  # Since setting the ENVIRONMENT property value with semicolon (e.g. PATH) is not supported, we
+  # generate a wrapper script to update PATH and LD_LIBRARY_PATH.
+  set(test_wrapper "${CMAKE_CURRENT_BINARY_DIR}/test_wrapper.cmake")
+  file(WRITE ${test_wrapper} "
+if(UNIX)
+  set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:.\")
+else()
+  set(ENV{PATH} \"\$ENV{PATH};.\")
+endif()
+execute_process(COMMAND \${TARGET_FILE} RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+  message(FATAL_ERROR \"test failed ! [result: \${result}]\")
+endif()
+")
+
+  add_test(
+    NAME tests_PythonQtDynamicLoading
+    COMMAND ${CMAKE_COMMAND} -DTARGET_FILE=$<TARGET_FILE:PythonQtDynamicLoader> -P ${test_wrapper}
+    )
+
 endif()
 
