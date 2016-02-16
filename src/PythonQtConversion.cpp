@@ -52,16 +52,16 @@ PythonQtValueStorage<void*, 128>   PythonQtConv::global_ptrStorage;
 PythonQtValueStorageWithCleanup<QVariant, 128> PythonQtConv::global_variantStorage;
 
 QHash<int, PythonQtConvertMetaTypeToPythonCB*>* PythonQtConv::GetMetaTypeToPythonConverters() {
-  static QHash<int, PythonQtConvertMetaTypeToPythonCB*>* _metaTypeToPythonConverters = nullptr;
-  if (_metaTypeToPythonConverters == nullptr) {
+  static QHash<int, PythonQtConvertMetaTypeToPythonCB*>* _metaTypeToPythonConverters = 0;
+  if (_metaTypeToPythonConverters == 0) {
 	_metaTypeToPythonConverters = new QHash<int, PythonQtConvertMetaTypeToPythonCB*>();
   }
   return _metaTypeToPythonConverters;
 }
 
 QHash<int, PythonQtConvertPythonToMetaTypeCB*>* PythonQtConv::GetPythonToMetaTypeConverters() {
-  static QHash<int, PythonQtConvertPythonToMetaTypeCB*>* _pythonToMetaTypeConverters = nullptr;
-  if (_pythonToMetaTypeConverters == nullptr) {
+  static QHash<int, PythonQtConvertPythonToMetaTypeCB*>* _pythonToMetaTypeConverters = 0;
+  if (_pythonToMetaTypeConverters == 0) {
 	_pythonToMetaTypeConverters = new QHash<int, PythonQtConvertPythonToMetaTypeCB*>();
   }
   return _pythonToMetaTypeConverters;
