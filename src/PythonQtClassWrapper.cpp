@@ -191,15 +191,15 @@ static PyObject* PythonQtInstanceWrapper_mul(PyObject* self, PyObject* other)
 #define BINARY_OP(NAME) \
 static PyObject* PythonQtInstanceWrapper_ ## NAME(PyObject* self, PyObject* other) \
 { \
-  static const const char* opName("__" #NAME "__"); \
+  static const char* opName("__" #NAME "__"); \
   return PythonQtInstanceWrapper_binaryfunc(self, other, opName); \
 }
 
 #define BINARY_OP_INPLACE(NAME) \
   static PyObject* PythonQtInstanceWrapper_i ## NAME(PyObject* self, PyObject* other) \
 { \
-  static const const char* opName("__i" #NAME "__"); \
-  static const const char* fallbackName("__" #NAME "__"); \
+  static const char* opName("__i" #NAME "__"); \
+  static const char* fallbackName("__" #NAME "__"); \
   return PythonQtInstanceWrapper_binaryfunc(self, other, opName, fallbackName); \
 }
 
