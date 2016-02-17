@@ -32,11 +32,13 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
     }
 
+  typedef int (*FUNC_RETURNS_INT_TYPE)();
+  FUNC_RETURNS_INT_TYPE func = 0;
+
   //
   // Resolve and invoke 'this_function_returns_42' function.
   //
-  typedef int (*FUNC_RETURNS_INT_TYPE)();
-  FUNC_RETURNS_INT_TYPE func = (FUNC_RETURNS_INT_TYPE) library.resolve("this_function_returns_42");
+  func = (FUNC_RETURNS_INT_TYPE) library.resolve("this_function_returns_42");
   if (!func)
     {
     std::cerr << "Failed to resolve symbol 'this_function_returns_42'" << std::endl;
@@ -56,16 +58,14 @@ int main(int argc, char* argv[])
   //
   // Resolve and invoke 'run_pythonqt_tests' function.
   //
-  typedef int (*FUNC_ARGC_ARGV_RETURNS_INT_TYPE)(int argc, char* argv[]);
-  FUNC_ARGC_ARGV_RETURNS_INT_TYPE func2 =
-    (FUNC_ARGC_ARGV_RETURNS_INT_TYPE) library.resolve("run_pythonqt_tests");
-  if (!func2)
+  func = (FUNC_RETURNS_INT_TYPE) library.resolve("run_pythonqt_tests");
+  if (!func)
     {
     std::cerr << "Failed to resolve symbol 'run_pythonqt_tests'" << std::endl;
     return EXIT_FAILURE;
     }
 
-  result = func2(argc, argv);
+  result = func();
   expected = 0;
   if (result != expected)
     {

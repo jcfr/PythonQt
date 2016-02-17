@@ -45,6 +45,12 @@
 
 #include <QApplication>
 
+#if !defined(Api_TEST_SUITE) && \
+  !defined(SignalHandler_TEST_SUITE) && \
+  !defined(SlotCalling_TEST_SUITE)
+# define ALL_TEST_SUITE
+#endif
+
 int main(int argc, char *argv[])
 {
   QApplication qapp(argc, argv);
@@ -52,12 +58,18 @@ int main(int argc, char *argv[])
   PythonQt::init(PythonQt::IgnoreSiteModule | PythonQt::RedirectStdOut);
 
   int failCount = 0;
+#if defined(ALL_TEST_SUITE) || defined(Api_TEST_SUITE)
   PythonQtTestApi api;
   failCount += QTest::qExec(&api, argc, argv);
+#endif
+#if defined(ALL_TEST_SUITE) || defined(SignalHandler_TEST_SUITE)
   PythonQtTestSignalHandler signalHandler;
   failCount += QTest::qExec(&signalHandler, argc, argv);
+#endif
+#if defined(ALL_TEST_SUITE) || defined(SlotCalling_TEST_SUITE)
   PythonQtTestSlotCalling slotCalling;
   failCount += QTest::qExec(&slotCalling, argc, argv);
+#endif
 
   PythonQt::cleanup();
 

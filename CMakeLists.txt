@@ -277,9 +277,11 @@ if(BUILD_TESTING)
     tests/PythonQtTests.h
     )
 
-  QT4_WRAP_CPP(PythonQtTests_sources
+  QT4_WRAP_CPP(_tmp_moc_sources
     tests/PythonQtTests.h
     )
+  list(APPEND PythonQtTests_sources ${_tmp_moc_sources})
+  list(APPEND moc_sources ${_tmp_moc_sources})
 
   if(PythonQt_Wrap_Qtcore)
     include_directories(generated_cpp${generated_cpp_suffix})
@@ -288,15 +290,73 @@ if(BUILD_TESTING)
       tests/PythonQtTestCleanup.cpp
       tests/PythonQtTestCleanup.h
       )
-    QT4_WRAP_CPP(test_sources
+    QT4_WRAP_CPP(_tmp_moc_sources
       tests/PythonQtTestCleanup.h
       )
+    list(APPEND test_sources ${_tmp_moc_sources})
+    list(APPEND moc_sources ${_tmp_moc_sources})
 
     set_property(SOURCE tests/PythonQtTestMain.cpp APPEND PROPERTY COMPILE_DEFINITIONS "PythonQt_Wrap_Qtcore")
   endif()
 
+  add_custom_target(PythonQtTestsWrapCpp DEPENDS ${moc_sources})
+
+  set(PythonQtTestApi_cases
+    testCall
+    testVariables
+    testRedirect
+    testImporter
+    testQColorDecorators
+    testQtNamespace
+    testConnects
+    testProperties
+    testDynamicProperties
+    )
+
+  set(PythonQtTestSlotCalling_cases
+    testNoArgSlotCall
+    testPODSlotCalls
+    testCPPSlotCalls
+    testQVariantSlotCalls
+    testQListSlotCalls
+    testQMapSlotCalls
+    testObjectSlotCalls
+    testMultiArgsSlotCall
+    testPyObjectSlotCall
+    testOverloadedCall
+    #testCppFactory # XXX Fix this. Running this test standalone is failing.
+    testInheritance
+    testAutoConversion
+    testProperties
+    )
+
+  set(PythonQtTestSignalHandler_cases
+    testSignalHandler
+    testRecursiveSignalHandler
+    )
+
+  foreach(suite Api SlotCalling SignalHandler)
+    set(_compile_definition "${suite}_TEST_SUITE")
+    set(_suffix "_${suite}")
+
+    add_executable(PythonQtCppTests${_suffix} ${test_sources} ${PythonQtTests_sources})
+    target_link_libraries(PythonQtCppTests${_suffix} PythonQt)
+    set_target_properties(PythonQtCppTests${_suffix} PROPERTIES COMPILE_DEFINITIONS ${_compile_definition})
+    add_dependencies(PythonQtCppTests${_suffix} PythonQtTestsWrapCpp)
+
+    # Add one test for each test suite case
+    foreach(case ${PythonQtTest${suite}_cases})
+      add_test(
+        NAME tests_PythonQtTestMain_${suite}_${case}
+        COMMAND ${Slicer_LAUNCH_COMMAND} $<TARGET_FILE:PythonQtCppTests_${suite}> tests/PythonQtTestMain ${case}
+        )
+    endforeach()
+  endforeach()
+
+  # suite: ALL
   add_executable(PythonQtCppTests ${test_sources} ${PythonQtTests_sources})
   target_link_libraries(PythonQtCppTests PythonQt)
+  add_dependencies(PythonQtCppTests PythonQtTestsWrapCpp)
 
   add_test(
     NAME tests_PythonQtTestMain
@@ -353,6 +413,8 @@ if(UNIX)
 else()
   set(ENV{PATH} \"\$ENV{PATH};.\")
 endif()
+set(ENV{SUITE} \"\${SUITE}\")
+set(ENV{CASE} \"\${CASE}\")
 execute_process(COMMAND \${TARGET_FILE} RESULT_VARIABLE result)
 if(NOT result EQUAL 0)
   message(FATAL_ERROR \"test failed ! [result: \${result}]\")
@@ -361,27 +423,52 @@ endif()
 
   function(_add_dynamic_loading_test run_testsuite_in_static_initializer)
 
+    macro(_add_targets extra_compile_definitions)
+
+      add_library(PythonQtDynamicLoaderSharedLibrary_${suffix}${suite_suffix} SHARED
+        tests/PythonQtDynamicLoaderSharedLibrary.cpp
+        ${PythonQtTests_sources}
+        )
+      target_link_libraries(PythonQtDynamicLoaderSharedLibrary_${suffix}${suite_suffix} PythonQt)
+      add_dependencies(PythonQtDynamicLoaderSharedLibrary_${suffix}${suite_suffix} PythonQtTestsWrapCpp)
+
+      add_executable(PythonQtDynamicLoader_${suffix}${suite_suffix} tests/PythonQtDynamicLoader.cpp)
+      target_link_libraries(PythonQtDynamicLoader_${suffix}${suite_suffix} ${QT_LIBRARIES})
+
+      if(run_testsuite_in_static_initializer)
+        set_property(TARGET
+          PythonQtDynamicLoaderSharedLibrary_${suffix}${suite_suffix}
+          PythonQtDynamicLoader_${suffix}${suite_suffix}
+          PROPERTY COMPILE_DEFINITIONS "RUN_TESTSUITE_IN_STATIC_INITIALIZER" ${extra_compile_definitions}
+          )
+      endif()
+    endmacro()
+
     set(suffix 0)
     if(run_testsuite_in_static_initializer)
       set(suffix 1)
     endif()
 
-    add_library(PythonQtDynamicLoaderSharedLibrary_${suffix} SHARED
-      tests/PythonQtDynamicLoaderSharedLibrary.cpp
-      ${PythonQtTests_sources}
-      )
-    target_link_libraries(PythonQtDynamicLoaderSharedLibrary_${suffix} PythonQt)
+    foreach(suite Api SlotCalling SignalHandler)
+      set(_compile_definition "${suite}_TEST_SUITE")
+      set(suite_suffix "_${suite}")
 
-    add_executable(PythonQtDynamicLoader_${suffix} tests/PythonQtDynamicLoader.cpp)
-    target_link_libraries(PythonQtDynamicLoader_${suffix} ${QT_LIBRARIES})
+      _add_targets("${_compile_definition}")
 
-    if(run_testsuite_in_static_initializer)
-      set_target_properties(
-        PythonQtDynamicLoaderSharedLibrary_${suffix}
-        PythonQtDynamicLoader_${suffix}
-        PROPERTIES COMPILE_DEFINITIONS "RUN_TESTSUITE_IN_STATIC_INITIALIZER"
-        )
-    endif()
+      # Add one test for each test suite case
+      foreach(case ${PythonQtTest${suite}_cases})
+        add_test(
+          NAME tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix}_${suite}_${case}
+          COMMAND ${CMAKE_COMMAND}
+            -DTARGET_FILE=$<TARGET_FILE:PythonQtDynamicLoader_${suffix}${suite_suffix}>
+            -DSUITE=${suite} -DCASE=${case} -P ${test_wrapper}
+          )
+      endforeach()
+    endforeach()
+
+    # suite: ALL
+    set(suite_suffix "")
+    _add_targets("")
 
     add_test(
       NAME tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix}
