@@ -75,6 +75,11 @@ extern "C"
 
     for(int argpos = 0; argpos < argc; ++argpos) { delete[] argv[argpos]; }
 
+    if (failCount > 0)
+      {
+      std::cerr << "Problem running _run_pythonqt_tests" << std::endl;
+      }
+
     return failCount;
   }
 

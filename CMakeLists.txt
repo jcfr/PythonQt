@@ -457,12 +457,15 @@ endif()
 
       # Add one test for each test suite case
       foreach(case ${PythonQtTest${suite}_cases})
+        set(_testname tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix}_${suite}_${case})
         add_test(
-          NAME tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix}_${suite}_${case}
+          NAME ${_testname}
           COMMAND ${CMAKE_COMMAND}
             -DTARGET_FILE=$<TARGET_FILE:PythonQtDynamicLoader_${suffix}${suite_suffix}>
             -DSUITE=${suite} -DCASE=${case} -P ${test_wrapper}
           )
+        set_tests_properties(${_testname}
+          PROPERTIES FAIL_REGULAR_EXPRESSION "Problem running _run_pythonqt_tests")
       endforeach()
     endforeach()
 
@@ -470,10 +473,13 @@ endif()
     set(suite_suffix "")
     _add_targets("")
 
+    set(_testname tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix})
     add_test(
-      NAME tests_PythonQtDynamicLoading_RUN_TESTSUITE_IN_STATIC_INITIALIZER_${suffix}
+      NAME ${_testname}
       COMMAND ${CMAKE_COMMAND} -DTARGET_FILE=$<TARGET_FILE:PythonQtDynamicLoader_${suffix}> -P ${test_wrapper}
       )
+    set_tests_properties(${_testname}
+      PROPERTIES FAIL_REGULAR_EXPRESSION "Problem running _run_pythonqt_tests")
 
   endfunction()
 
